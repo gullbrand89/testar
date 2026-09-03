@@ -36,8 +36,34 @@ def bin_of(pri):
     return max(0, min(N_BINS - 1, b))
 
 def pri_of_bin(b):
-    return PRI_MIN + (b + 0.5) / (N_BINS - 1) * (PRI_MAX - PRI_MIN)   # bin-mitten
+    return PRI_MIN + (b + 0.5) / (N_BINS - 1) * (PRI_MAX - PRI_MIN)   # bin-def canon_rot(seq):
+    seq = list(seq)
+    i = min(range(len(seq)), key=lambda k: seq[k:] + seq[:k])
+    return i
 
-    
-    
-    
+def to_tokens(levels, lengths, order_fixed, length_fixed, jitter):
+    levels, lengths = list(levels), [int(x) for x in lengths]
+    uniq = sorted(set(levels))
+    name = {v: chr(65 + i) for i, v in enumerate(uniq)}
+    t = ["LEVELS", f"N{len(uniq)}"]
+    for v in uniq:
+        t += [name[v], f"N{bin_of(v)}", f"N{jitter.get(v, 0)}"]
+
+    seq = [name[v] for v in levels]
+    if order_fixed:
+        r = canon_rot(seq)
+        t += ["ORDER", "FIXED"] + seq[r:] + seq[:r]
+    else:
+        t += ["ORDER", "RANDOM"]
+
+    if length_fixed:
+        if order_fixed:
+            L = lengths[r:] + lengths[:r]          # samma rotation som nivåerna
+        else:
+            r2 = canon_rot(lengths)
+            L = lengths[r2:] + lengths[:r2]        # egen rotation
+        t += ["DWELL", "FIXED"] + [f"N{x}" for x in L]
+    else:
+        t += ["DWELL", "RANDOM"] + [f"N{x}" for x in sorted(lengths)]
+    return t + ["END"]
+
