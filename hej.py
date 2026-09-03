@@ -66,4 +66,26 @@ def to_tokens(levels, lengths, order_fixed, length_fixed, jitter):
     else:
         t += ["DWELL", "RANDOM"] + [f"N{x}" for x in sorted(lengths)]
     return t + ["END"]
+    
+    import numpy as np
+
+lv_all, gaps, len_all = [], [], []
+for _ in range(10000):
+    levels, lengths, *_ = my_generator()
+    levels = np.asarray(levels, dtype=float)
+    lv_all.extend(levels)
+    len_all.extend(lengths)
+    u = np.unique(levels)
+    if len(u) > 1:
+        gaps.append(np.min(np.diff(u)))       # minsta avstånd mellan två nivåer
+
+lv_all, gaps, len_all = map(np.asarray, (lv_all, gaps, len_all))
+print("PRI     min/max:", lv_all.min(), lv_all.max())
+print("PRI     1%/99%: ", np.percentile(lv_all, [1, 99]))
+print("min gap min/1%: ", gaps.min(), np.percentile(gaps, 1))
+print("längd   min/max:", len_all.min(), len_all.max())
+
+    
+    
+    
 
