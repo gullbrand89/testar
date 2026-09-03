@@ -146,6 +146,40 @@ def in_cont_of(pri):
     lo, hi = math.log(IN_MIN), math.log(IN_MAX)
     x = (math.log(min(max(pri, IN_MIN), IN_MAX)) - lo) / (hi - lo)
     return x * 2 - 1
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+class PriDataset(Dataset):
+    def __init__(self, pairs):
+        # pairs: lista av (bins, cont, toa, tokens)
+        self.pairs = pairs
+    def __len__(self): return len(self.pairs)
+    def __getitem__(self, i):
+        bins, cont, toa, tokens = self.pairs[i]
+        return (torch.as_tensor(bins, dtype=torch.long),
+                torch.as_tensor(cont, dtype=torch.float32),
+                torch.as_tensor(toa,  dtype=torch.float32),
+                torch.tensor([BOS] + [TOK2ID[t] for t in tokens] + [EOS]))
+
+def collate(batch):
+    bins, cont, toa, tgt = zip(*batch)
+    B = len(batch)
+    T = max(len(b) for b in bins)
+    L = max(len(t) for t in tgt)
+    src_bins = torch.zeros(B, T, dtype=torch.long)
+    src_cont = torch.zeros(B, T)
+    src_toa  = torch.zeros(B, T)
+    src_mask = torch.ones(B, T, dtype=torch.bool)      # True = padding
+    tgt_pad  = torch.full((B, L), PAD, dtype=torch.long)
+    for i in range(B):
+        n = len(bins[i]); m = len(tgt[i])
+        src_bins[i, :n] = bins[i]; src_cont[i, :n] = cont[i]; src_toa[i, :n] = toa[i]
+        src_mask[i, :n] = False
+        tgt_pad[i, :m] = tgt[i]
+    return src_bins, src_cont, src_toa, src_mask, tgt_pad[:, :-1], tgt_pad[:, 1:]
+
+loader = DataLoader(PriDataset(pairs), batch_size=64, shuffle=True, collate_fn=collate)
+
 
     
     
