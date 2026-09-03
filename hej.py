@@ -128,6 +128,25 @@ def show(pri_true, pri_obs, tokens):
     fig.suptitle(" ".join(tokens), fontsize=8)
     plt.tight_layout(); plt.show()
 
+
+import math
+
+IN_MIN, IN_MAX = 100.0, 4000.0   # observationsrymd, större tak än facitets
+IN_BINS = 256                    # sista binnen (IN_BINS-1) används som overflow
+
+def in_bin_of(pri):
+    if pri >= IN_MAX:
+        return IN_BINS - 1                     # overflow
+    lo, hi = math.log(IN_MIN), math.log(IN_MAX)
+    b = int((math.log(max(pri, IN_MIN)) - lo) / (hi - lo) * (IN_BINS - 2))
+    return max(0, min(IN_BINS - 2, b))
+
+def in_cont_of(pri):
+    """kontinuerlig kanal: log(pri) normaliserad till [-1, 1]"""
+    lo, hi = math.log(IN_MIN), math.log(IN_MAX)
+    x = (math.log(min(max(pri, IN_MIN), IN_MAX)) - lo) / (hi - lo)
+    return x * 2 - 1
+
     
     
 
