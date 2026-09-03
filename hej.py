@@ -26,3 +26,18 @@ def to_tokens(levels, lengths, order_type, length_type, jitter):
     else:
         t += ["DWELL", length_type.upper()] + [f"N{x}" for x in sorted(lengths)]
     return t + ["END"]
+    
+    
+    PRI_MIN, PRI_MAX = 100.0, 1000.0   # emitterrymden
+N_BINS = 256
+
+def bin_of(pri):
+    b = int((pri - PRI_MIN) / (PRI_MAX - PRI_MIN) * (N_BINS - 1))
+    return max(0, min(N_BINS - 1, b))
+
+def pri_of_bin(b):
+    return PRI_MIN + (b + 0.5) / (N_BINS - 1) * (PRI_MAX - PRI_MIN)   # bin-mitten
+
+    
+    
+    
