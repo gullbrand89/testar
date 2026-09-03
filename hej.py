@@ -85,7 +85,49 @@ print("PRI     1%/99%: ", np.percentile(lv_all, [1, 99]))
 print("min gap min/1%: ", gaps.min(), np.percentile(gaps, 1))
 print("längd   min/max:", len_all.min(), len_all.max())
 
-    
+import numpy as np
+import matplotlib.pyplot as plt
+
+def roll_out(levels, lengths, order_fixed, length_fixed, n_pulses, jitter_us, rng):
+    """cykel -> lista av sanna PRI-värden (µs)"""
+    levels, lengths = list(levels), list(lengths)
+    pri, i = [], 0
+    while len(pri) < n_pulses:
+        lvl = levels[i % len(levels)] if order_fixed else rng.choice(levels)
+        L   = lengths[i % len(lengths)] if length_fixed else rng.choice(lengths)
+        j   = jitter_us.get(lvl, 0.0)
+        for _ in range(int(L)):
+            pri.append(lvl + rng.uniform(-j, j))
+            if len(pri) == n_pulses: break
+        i += 1
+    return np.array(pri)
+
+def corrupt(pri, rng, p_drop=0.1, p_spur=0.02, meas_noise_us=0.5):
+    """sanna PRI -> observerade PRI via TOA"""
+    toa = np.concatenate([[0.0], np.cumsum(pri)])
+    keep = rng.random(len(toa)) > p_drop                # bortfall
+    keep[0] = True
+    toa = toa[keep]
+    n_spur = rng.binomial(len(toa), p_spur)              # spuriösa pulser
+    spur = rng.uniform(toa[0], toa[-1], n_spur)
+    toa = np.sort(np.concatenate([toa, spur]))
+    toa = toa + rng.normal(0, meas_noise_us, len(toa))    # mätbrus
+    toa = np.sort(toa)
+    return toa, np.diff(toa)                              # observerad TOA och PRI
+
+def make_input(pri_obs):
+    bins = np.array([in_bin_of(p) for p in pri_obs])
+    cont = np.array([in_cont_of(p) for p in pri_obs])
+    return bins, cont
+
+def show(pri_true, pri_obs, tokens):
+    fig, ax = plt.subplots(2, 1, figsize=(10, 5), sharex=False)
+    ax[0].plot(pri_true, ".-"); ax[0].set_title("sann PRI")
+    ax[1].plot(pri_obs, ".-", color="C1"); ax[1].set_title("observerad PRI (efter bortfall)")
+    ax[1].axhline(PRI_MAX, ls="--", color="gray")
+    fig.suptitle(" ".join(tokens), fontsize=8)
+    plt.tight_layout(); plt.show()
+
     
     
 
